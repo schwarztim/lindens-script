@@ -28,7 +28,7 @@ A collection of robust, enterprise-ready PowerShell tools for JSON validation an
 ### From Source
 
 ```powershell
-git clone https://github.com/YOUR_USERNAME/lindens-script.git
+git clone https://github.com/schwarztim/lindens-script.git
 cd lindens-script
 . ./src/Invoke-JsonSchemaValidation.ps1
 ```
