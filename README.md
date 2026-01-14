@@ -4,7 +4,14 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
-A robust, extensible PowerShell JSON schema validator with dynamic validation logic, comprehensive type checking, and enterprise-ready error reporting.
+A collection of robust, enterprise-ready PowerShell tools for JSON validation and network flow evaluation.
+
+## Tools Included
+
+| Tool | Description |
+|------|-------------|
+| **JSON Schema Validator** | Dynamic JSON validation with comprehensive type checking |
+| **Firewall Flow Evaluator** | PCI DSS compliance evaluation for network flows with DNS resolution and subnet support |
 
 ## Features
 
@@ -294,12 +301,109 @@ Install-Module -Name Pester -Force -SkipPublisherCheck
 Invoke-Pester ./tests -Output Detailed
 ```
 
+---
+
+## Firewall Flow Evaluator
+
+An Azure Function for evaluating network firewall flows against PCI DSS compliance requirements.
+
+### Features
+
+- **Subnet/CIDR Support** - Pass CIDR notation (`10.0.0.0/24`) and automatically use the network start IP for lookups
+- **Quiet DNS Failures** - Returns structured failure information instead of throwing exceptions
+- **Hostname Resolution** - Resolves FQDNs and short hostnames with configurable suffix fallback
+- **PCI Zone Detection** - Identifies CDE, CSE, and out-of-scope network segments
+- **Batch Processing** - Evaluate multiple source/destination combinations in a single request
+- **Risk Assessment** - Port-level risk analysis with high/medium/low categorization
+
+### Input Formats
+
+The evaluator accepts multiple input formats for source and destination:
+
+| Format | Example | Behavior |
+|--------|---------|----------|
+| IPv4 Address | `192.168.1.100` | Used directly |
+| CIDR Subnet | `10.0.0.0/24` | Extracts network start IP (`10.0.0.0`) |
+| FQDN | `server.example.com` | DNS lookup |
+| Short Hostname | `myserver` | Tries configured DNS suffixes |
+
+### Quiet DNS Failure Response
+
+When DNS resolution fails, instead of throwing an error, the API returns a structured response:
+
+```json
+{
+  "evaluationStatus": "FAILED",
+  "resolutionSuccess": false,
+  "resolutionFailures": [
+    {
+      "side": "source",
+      "input": "unknown-server",
+      "error": "Unable to resolve short hostname...",
+      "type": "DNS_SHORTNAME_FAILED",
+      "tried": ["unknown-server.example.com", "unknown-server.corp.net"]
+    }
+  ]
+}
+```
+
+### Subnet/CIDR Usage
+
+When you pass a CIDR notation subnet, the evaluator:
+
+1. Parses the CIDR to extract network address and prefix
+2. Uses the **network start IP** for the Azure Search lookup
+3. Includes subnet details in the resolution info
+
+```json
+{
+  "srcInput": "10.0.1.0/24",
+  "srcResolvedIp": "10.0.1.0",
+  "srcResolution": {
+    "type": "CIDR_SUBNET",
+    "startIp": "10.0.1.0",
+    "endIp": "10.0.1.255",
+    "prefix": 24,
+    "hostCount": 256,
+    "note": "Using subnet start IP for search"
+  }
+}
+```
+
+### Example Request
+
+```json
+{
+  "srcIp": "10.0.1.0/24",
+  "dstIp": "192.168.100.50, webserver.corp.net",
+  "protocol": "TCP",
+  "srcPort": "any",
+  "dstPort": "443, 8080",
+  "context": "Web traffic to DMZ"
+}
+```
+
+### Response Fields
+
+| Field | Description |
+|-------|-------------|
+| `evaluationStatus` | `SUCCESS` or `FAILED` |
+| `resolutionSuccess` | Whether all endpoints resolved |
+| `resolutionFailures` | Details of any DNS failures |
+| `pciScopeCategory` | `CDE_SCOPE`, `CSE_CONNECTED`, or `OUT_OF_SCOPE` |
+| `hardBlock` | Whether the flow is explicitly disallowed |
+| `flowBoundary` | Direction of flow (e.g., `TO_CDE`, `FROM_CSE`) |
+| `portRiskLevel` | `HIGH`, `MEDIUM`, `LOW`, or `UNKNOWN` |
+
+---
+
 ## Project Structure
 
 ```
 lindens-script/
 ├── src/
-│   └── Invoke-JsonSchemaValidation.ps1    # Main module
+│   ├── Invoke-JsonSchemaValidation.ps1    # JSON Schema Validator
+│   └── Invoke-FirewallFlowEvaluation.ps1  # Firewall Flow Evaluator (Azure Function)
 ├── examples/
 │   ├── basic-usage.ps1                     # Usage examples
 │   └── user-schema.json                    # Sample schema
