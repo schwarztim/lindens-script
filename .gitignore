@@ -1,0 +1,27 @@
+# PowerShell
+*.ps1xml
+
+# Test results
+test-results.xml
+TestResults/
+coverage.xml
+
+# IDE
+.vscode/
+.idea/
+*.code-workspace
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# Module output
+Output/
+out/
